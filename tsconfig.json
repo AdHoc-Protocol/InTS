@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2020",
+    "outDir":"./JS",
+    "lib": [
+      "ESNext",
+      "dom"
+    ],
+    "strictNullChecks": true,
+    "sourceMap": true
+  },
+  "include": ["*.ts",
+	"collections/**/*.ts"],
+  "exclude": [
+    "node_modules"
+  ]
+}

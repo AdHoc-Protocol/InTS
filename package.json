@@ -1,0 +1,15 @@
+{
+  "name": "adhoc_protocol",
+  "version": "0.0.0",
+  "description": "AdHoc protocol handler source",
+  "main": "_Test.ts",
+  "author": {
+    "name": "Chikirev Sirguy",
+    "email": "cheblin@gmail.com",
+    "url": "https://github.com/orgs/AdHoc-Protocol"
+  },
+  "devDependencies": {
+    "@types/ws": "^7.4.7",
+    "typescript": "^4.6.4"
+  }
+}
