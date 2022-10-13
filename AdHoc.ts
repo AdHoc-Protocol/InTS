@@ -487,17 +487,17 @@ export namespace AdHoc {
 					}
 					this.mode = OK;
 					for (let dst: AdHoc.INT.BytesDst | undefined; ;)
-						if ((dst = this.slot!.dst.put_bytes(this))) //углубление в иерархию
+						if ((dst = this.slot!.dst.put_bytes(this))) //deeper in hierarchy
 						{
 							this.slot        = this.slot!.next ??= new Receiver.Slot(this.slot);
 							this.slot!.dst   = dst;
 							this.slot!.state = 0;
 						}
-						else  //предлагаем клиенту забрать данные и анализируем ret после того, как клиент попытался забрать данные
+						else
 						{
-							if (this.mode < OK) break write;      //предоставленные полученные данные закончились
-							if (!this.slot!.prev) break;     //это был корневой уровень всё, все данные получены. далее диспетчеризация
-							// slot!.dst = undefined; //возврат из глубин не очищаем возможно будет использовано
+							if (this.mode < OK) break write;      //data over
+							if (!this.slot!.prev) break;     //that was root, next dispatching
+							// slot!.dst = undefined; //do not clean up maybe will use
 							this.free_slot();
 						}
 					this.fix_byte    = 0;
@@ -509,12 +509,12 @@ export namespace AdHoc {
 							this.assertion = Assertion.UNEXPECT;
 							return -1;
 						case Assertion.PACK_END://expected
-							this.int_dst!.received(this, this.slot!.dst);//диспетчеризация
-							this.slot!.dst = undefined; //подготовка к чтению данных следующего пакета
+							this.int_dst!.received(this, this.slot!.dst);//dispatching
+							this.slot!.dst = undefined; //mark ready to receive next package
 							return remaining;
 					}
-					this.int_dst!.received(this, this.slot!.dst);//диспетчеризация
-					this.slot!.dst = undefined; //подготовка к чтению данных следующего пакета
+					this.int_dst!.received(this, this.slot!.dst);//dispatching
+					this.slot!.dst = undefined; //mark ready to receive next package
 				}//write:
 			
 			this.buffer = undefined;
@@ -574,7 +574,7 @@ export namespace AdHoc {
 
 //region bits
 		
-		public init_bits()  //инициализация получение бит
+		public init_bits()  //bits receiving init
 		{
 			this.bits = 0;
 			this.bit  = 8;
@@ -826,7 +826,7 @@ export namespace AdHoc {
 
 
 //region temporary store part of received
-		private tmp_ref: WeakRef<Receiver.TmpBuffer> = new WeakRef(new Receiver.TmpBuffer(this, 512)); //временный буфер для получаемой строки
+		private tmp_ref: WeakRef<Receiver.TmpBuffer> = new WeakRef(new Receiver.TmpBuffer(this, 512)); //tmp buffer
 		private tmp: Receiver.TmpBuffer | undefined;
 		
 		private set_tmp(bytes: number) {
@@ -843,7 +843,7 @@ export namespace AdHoc {
 
 //endregion
 		
-		public get_string(): string {//получение результата автономной заливки
+		public get_string(): string {//getting result internal loading
 			
 			const ret            = this.internal_string;
 			this.internal_string = undefined;
@@ -1324,7 +1324,7 @@ export namespace AdHoc {
 				}
 				this.mode     = OK;
 				this.u4       = 0;
-				this.fix_byte = 0; //требует корректная побитовая отправка
+				this.fix_byte = 0; //this need bits sending
 				return -1;
 			}
 			this.byte = byte ? byte : 0;
@@ -1335,7 +1335,7 @@ export namespace AdHoc {
 			const position = this.byte;
 			read:
 				for (; ;) {
-					if (!this.slot || !this.slot.src)     // начало
+					if (!this.slot || !this.slot.src)
 					{
 						if (!(this.slot = this.slot_ref!.deref())) this.slot_ref = new WeakRef(this.slot = new Transmitter.Slot(undefined));
 						if (!(this.slot.src = this.int_src!.sending(this))) {
@@ -1350,10 +1350,10 @@ export namespace AdHoc {
 						this.fix_byte   = 0;
 						this.slot.index = 0;
 					}
-					else switch (this.mode)     //было прервана передача пакета, вспоминаем на чём остановились
+					else switch (this.mode)     //restore transition state
 					{
 						case STR:
-							if (!this.encode(this.internal_string!)) break read;      //места в предоставленном буфере недостаточно для дальнейшей работы
+							if (!this.encode(this.internal_string!)) break read;      //there is not enough space in the provided buffer for further work
 							this.internal_string = undefined;
 							break;
 						case VAL:
@@ -1384,23 +1384,23 @@ export namespace AdHoc {
 							this.byte      = this.bits_byte + 1;
 							break;
 					}
-					this.mode = OK; //восстанавливаем состояние
-					for (let src: AdHoc.INT.BytesSrc | undefined; ;)                             //анализируем итог заливки данных
-						if ((src = this.slot!.src.get_bytes(this)))     //углубление в иерархию
+					this.mode = OK;
+					for (let src: AdHoc.INT.BytesSrc | undefined; ;)
+						if ((src = this.slot!.src.get_bytes(this)))     //deeper in hierarchy
 						{
 							this.slot       = this.slot!.next ??= new Transmitter.Slot(this.slot);
 							this.slot.src   = src;
 							this.slot.state = 1; //skip write id
 						}
-						else //углубления в иерархию нет
+						else
 						{
-							if (this.mode < OK) break read;     //места в предоставленном буфере недостаточно для дальнейшей работы
-							if (!this.slot!.prev) break;     //это был корневой уровень, все данные пакета отправленны
-							//slot.src = undefined так не делаем может использоваться в MAP
+							if (this.mode < OK) break read;     //there is not enough space in the provided buffer for further work
+							if (!this.slot!.prev) break;     //it was the root level, all packet data sent
+							//slot.src = undefined so don't do, can be used in MAP
 							this.free_slot();
 						}
 					this.int_src!.sent(this, this.slot.src);
-					this.slot!.src = undefined; //метка запроса данных следущего пакета
+					this.slot!.src = undefined; //data request label of the next packet
 					if (this.assertion == Assertion.UNEXPECT) continue;
 					this.slot      = undefined;
 					this.assertion = Assertion.PACK_END;
@@ -1421,7 +1421,7 @@ export namespace AdHoc {
 		public put_bool_(src: boolean | undefined) {this.put_bits(src == undefined ? 0 : src ? 1 : 2, 2);}
 		
 		
-		public allocate(bytes: number, current_case: number): boolean {//запрос места куском
+		public allocate(bytes: number, current_case: number): boolean {
 			if (bytes <= this.len - this.byte) return true;
 			this.slot!.state = current_case;
 			this.mode        = DONE;
@@ -1432,7 +1432,7 @@ export namespace AdHoc {
 		
 		private bits_byte = -1;
 		
-		public allocate_(current_case: number): boolean { //запрос места (20 байт) для как минимум одной транзакции вызывается один раз на первом varint, в продолжение init_bits
+		public allocate_(current_case: number): boolean { //space request (20 bytes) for at least one transaction is called once on the first varint, during init_bits
 			if (17 < this.len - this.byte) return true;
 			
 			this.state = current_case;
@@ -1454,18 +1454,18 @@ export namespace AdHoc {
 			this.bits = 0;
 			this.bit  = 0;
 			
-			this.bits_byte = this.byte++;//фиксация места
+			this.bits_byte = this.byte++;//reserve space
 			return true;
 		}
 		
 		
-		//проверка, если в bits накопилось достаточно данных, то сброc заполненного первого байта bits в выходной буфер по индексу bits_byte
-		//и переключение на новое место bits_byte
+		//checking if enough data has accumulated in bits, then dumping the filled first byte of bits into the output buffer at the bits_byte index
+		//and switching to a new bits_byte location
 		public put_bits(src: number, len_bits: number): boolean {
 			this.bits |= src << this.bit;
-			if ((this.bit += len_bits) < 9) return false;     //именно 9! не 8! чтобы избежать выделения очередного байта после заполнения текущего. что может оказаться лишним
+			if ((this.bit += len_bits) < 9) return false;     //exactly 9! not 8! to avoid allocating the next byte after the current one is full. what might be redundant
 			
-			this.buffer!.setUint8(this.bits_byte, this.bits);//отправка
+			this.buffer!.setUint8(this.bits_byte, this.bits);
 			
 			this.bits >>= 8;
 			this.bit -= 8;
@@ -1476,7 +1476,7 @@ export namespace AdHoc {
 		
 		public end_bits() {
 			if (0 < this.bit) this.buffer!.setUint8(this.bits_byte, this.bits);
-			else this.byte = this.bits_byte;//trim byte at bits_byte index выделяли, но не использовали
+			else this.byte = this.bits_byte;//trim byte at bits_byte index isolated but not used
 		}
 		
 		public continue_bits_at(continue_at_case: number) {
@@ -1808,7 +1808,7 @@ export namespace AdHoc {
 		public encode(str: string): boolean {
 			
 			for (let len = str.length; this.fix_byte < len;) {
-				if (this.len - this.byte < 5) return false;    //место под самый длинный символ + один байт  на 0xFF признак конца строки
+				if (this.len - this.byte < 5) return false;    //place for the longest character + one byte per 0xFF line terminator
 				const ch = str.charCodeAt(this.fix_byte++);
 				if (ch < 0x80) this.buffer!.setUint8(this.byte++, ch);    // Have at most seven bits
 				else if (ch < 0x800) {
@@ -1838,7 +1838,7 @@ export namespace AdHoc {
 				}
 			}
 			if (this.len - this.byte == 0) return false;
-			this.buffer!.setUint8(this.byte++, 0xFF); // признак конца строки
+			this.buffer!.setUint8(this.byte++, 0xFF); // line terminator
 			this.fix_byte = 0;
 			return true;
 		}
