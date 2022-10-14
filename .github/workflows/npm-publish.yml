@@ -16,8 +16,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
+      - run: npm install -g typescript
+      - run: npm install -g npx
       - run: npm install
-      - run: npm test
+      - run: npx tsc
 
   publish-npm:
     needs: build
