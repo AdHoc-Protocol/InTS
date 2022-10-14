@@ -17,7 +17,6 @@ jobs:
         with:
           node-version: 16
       - run: npm install -g typescript
-      - run: npm install -g npx
       - run: npm install
       - run: npx tsc
 
