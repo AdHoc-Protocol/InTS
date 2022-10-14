@@ -6,10 +6,22 @@
   "author": {
     "name": "Chikirev Sirguy",
     "email": "cheblin@gmail.com",
-    "url": "https://github.com/orgs/AdHoc-Protocol"
+    "url": "https://github.com/orgs/AdHoc-Protocol",
+    "homepage": ""
   },
   "devDependencies": {
     "@types/ws": "latest",
     "typescript": "next"
+  },
+  "keywords": [
+    "network",
+    "protocol",
+    "generator",
+    "serialization",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/orgs/AdHoc-Protocol/repositories?type=source"
   }
 }
