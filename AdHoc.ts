@@ -5,8 +5,8 @@ import Context from "./Context"
 //Use undefined. Do not use undefined. https://github.com/Microsoft/TypeScript/wiki/Coding-guidelines#undefined-and-undefined
 
 export class AdHoc {
-	byte: number
-	len: number
+	byte: number;
+	len: number;
 	
 	bit: number;
 	
