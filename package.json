@@ -1,6 +1,6 @@
 {
   "name": "adhoc_protocol",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "AdHoc protocol handler source",
   "main": "_Test.ts",
   "author": {
