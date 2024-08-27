@@ -1,3 +1,7 @@
 
 /InTS.iml
 /JS/
+/.gitignore
+/.idea/
+/Generator.class
+/Generator.java

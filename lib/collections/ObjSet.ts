@@ -1,169 +1,243 @@
-// AdHoc protocol - data interchange format and source code generator
-// Copyright 2020 Chikirev Sirguy, Unirail Group. All rights reserved.
-// al8v5C6HU4UtqE9@gmail.com
-// https://github.com/orgs/AdHoc-Protocol
+//  MIT License
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
+//  Copyright © 2020 Chikirev Sirguy, Unirail Group. All rights reserved.
+//  For inquiries, please contact:  al8v5C6HU4UtqE9@gmail.com
+//  GitHub Repository: https://github.com/AdHoc-Protocol
 //
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to use,
+//  copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+//  the Software, and to permit others to do so, under the following conditions:
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-export default class ObjSet<K> implements Set<K> {
+//  1. The above copyright notice and this permission notice must be included in all
+//     copies or substantial portions of the Software.
+//
+//  2. Users of the Software must provide a clear acknowledgment in their user
+//     documentation or other materials that their solution includes or is based on
+//     this Software. This acknowledgment should be prominent and easily visible,
+//     and can be formatted as follows:
+//     "This product includes software developed by Chikirev Sirguy and the Unirail Group
+//     (https://github.com/AdHoc-Protocol)."
+//
+//  3. If you modify the Software and distribute it, you must include a prominent notice
+//     stating that you have changed the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+//  OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//  SOFTWARE.
+import {json} from "node:stream/consumers";
+
+
+export default class ObjSet<KEY> implements Set<KEY> {
     
-    #undefinedV_exists = false
+    // Flag to indicate if an undefined key exists in the set.
+    #undefined_Key_exists = false;
     
+    // A map to store the hash values and their corresponding items.
+    readonly #hash_to_items: Map<number, KEY[]> = new Map<number, KEY[]>();
     
-    readonly #map: Map<number, K []> = new Map<number, K[]>()
-    readonly #hashK: (hash: number, k: K | undefined) => number
-    readonly #equals: (k1: K, k2: K) => boolean
+    // Hash function to compute hash values for keys.
+    readonly #hash: (hash: number, k: KEY | undefined) => number;
     
-    constructor(equals: (k1: K, v2: K) => boolean, hashK: (hash: number, k: K) => number) {
-        this.#hashK = hashK
-        this.#equals = equals
+    // Equality function to compare keys.
+    readonly #equals: (k1: KEY, k2: KEY) => boolean;
+    
+    // Constructor to initialize the hash and equals functions.
+    constructor(equals: (k1: KEY, k2: KEY) => boolean, hash: (hash: number, k: KEY) => number) {
+        this.#hash = hash;
+        this.#equals = equals;
     }
     
-    #_size = 0
+    // Internal counter to keep track of the number of elements in the set.
+    #_size = 0;
     
-    get size(): number { return this.#_size }
+    // Returns the number of elements in the set.
+    get size(): number { return this.#_size; }
     
+    // Clears all elements from the set.
     clear(): void {
-        this.#map.clear()
-        this.#_size = 0
-        this.#undefinedV_exists = false
+        this.#hash_to_items.clear();
+        this.#_size = 0;
+        this.#undefined_Key_exists = false;
     }
     
-    
-    delete(key: K): boolean {
-        
+    // Deletes a specified key from the set.
+    delete(key: KEY): boolean {
         if (!key) {
-            if (!this.#undefinedV_exists) return false
-            
-            this.#undefinedV_exists = false
-            this.#_size--
-            return true
+            if (!this.#undefined_Key_exists) return false;
+            this.#undefined_Key_exists = false;
+            this.#_size--;
+            return true;
         }
         
-        const hash = this.#hashK(seed, key)
-        if (!this.#map.has(hash)) return false;
+        const hash = this.#hash(seed, key);
+        if (!this.#hash_to_items.has(hash)) return false;
         
-        const ks = this.#map.get(hash)!
+        const ks = this.#hash_to_items.get(hash)!;
         
-        if (ks.length == 1)
+        if (ks.length === 1)
             if (key === ks[0] || this.#equals(key, ks[0])) {
-                this.#map.delete(hash)
-                this.#_size--
-                return true
-            }
-            else return false
+                this.#hash_to_items.delete(hash);
+                this.#_size--;
+                return true;
+            } else 
+                return false;
         
         if (key === ks[ks.length - 1] || this.#equals(key, ks[ks.length - 1])) {
             ks.pop();
-            this.#_size--
-            return true
+            this.#_size--;
+            return true;
         }
         
-        for (let k = ks.length - 1; -1 < --k;)
+        for (let k = ks.length - 1; k >= 0; k--)
             if (key === ks[k] || this.#equals(key, ks[k])) {
                 ks[k] = ks[ks.length - 1];
                 ks.pop();
-                this.#_size--
+                this.#_size--;
                 return true;
             }
         
-        return false
+        return false;
     }
     
-    get [Symbol.toStringTag]() {return 'ObjSet'};
+    // Returns the string tag of the object.
+    get [Symbol.toStringTag]() { return 'ObjSet'; }
     
-    add(key: K): this {
+    // Converts the set to a JSON array.
+    toJSON(): KEY[] {
+        const json: KEY[] = [];
+        if (this.#undefined_Key_exists) json.push(undefined!);
+        for (const ks of this.#hash_to_items.values())
+            json.push(...ks);
+        
+        return json;
+    }
+    
+    // Adds a key to the set.
+    add(key: KEY): this {
         if (key) {
-            const hash = this.#hashK(seed, key)
+            const hash = this.#hash(seed, key);
             
-            if (this.#map.has(hash)) {
-                const ks = this.#map.get(hash)!
+            if (this.#hash_to_items.has(hash)) {
+                const ks = this.#hash_to_items.get(hash)!;
                 for (const k of ks)
                     if (key === k || this.#equals(key, k))
-                        return this
-                
-                ks.push(key)
-            }
-            else this.#map.set(hash, [key])
+                        return this;
+                ks.push(key);
+            } else
+                this.#hash_to_items.set(hash, [key]);
             
-            this.#_size++
+            this.#_size++;
             return this;
         }
         
-        if (this.#undefinedV_exists) return this;
-        this.#_size++
-        this.#undefinedV_exists = true;
+        if (this.#undefined_Key_exists) return this;
+        this.#_size++;
+        this.#undefined_Key_exists = true;
         return this;
-        
     }
     
-    has(key: K): boolean {
-        if (!key) return this.#undefinedV_exists;
+    // Checks if a key exists in the set.
+    has(key: KEY): boolean {
+        if (!key) return this.#undefined_Key_exists;
         
-        const hash = this.#hashK(seed, key)
-        if (!this.#map.has(hash)) return false
+        const hash = this.#hash(seed, key);
+        if (!this.#hash_to_items.has(hash)) return false;
         
-        for (const k of this.#map.get(hash)!)
+        for (const k of this.#hash_to_items.get(hash)!)
             if (this.#equals(key, k))
                 return true;
         
-        return false
+        return false;
     }
     
-    * [Symbol.iterator](): IterableIterator<K> {
-        if (this.#undefinedV_exists) yield undefined!;
-        for (const ks of this.#map.values()) {
+    // Returns an iterator for the set.
+    * [Symbol.iterator](): IterableIterator<KEY> {
+        if (this.#undefined_Key_exists) yield undefined!;
+        for (const ks of this.#hash_to_items.values())
             for (const k of ks)
                 yield k;
-        }
     }
     
-    * entries(): IterableIterator<[K, K]> {
-        if (this.#undefinedV_exists) yield [undefined!, undefined!];
-        for (const ks of this.#map.values()) {
+    // Returns an iterator for the entries in the set.
+    * entries(): IterableIterator<[KEY, KEY]> {
+        if (this.#undefined_Key_exists) yield [undefined!, undefined!];
+        for (const ks of this.#hash_to_items.values())
             for (const k of ks)
                 yield [k, k];
-        }
     }
     
-    * keys(): IterableIterator<K> {
-        yield* this[Symbol.iterator]();
-    }
+    // Returns an iterator for the keys in the set.
+    * keys(): IterableIterator<KEY> { yield* this[Symbol.iterator](); }
     
-    * values(): IterableIterator<K> {
-        yield* this[Symbol.iterator]();
-    }
+    // Returns an iterator for the values in the set.
+    * values(): IterableIterator<KEY> { yield* this[Symbol.iterator](); }
     
-    forEach(callback: (k: K, k2: K, set: Set<K>) => void, thisArg?: any): void {
-        if (this.#undefinedV_exists) callback.call(thisArg, undefined, undefined, this);
+    // Executes a provided function once for each value in the set.
+    forEach(callback: (k: KEY, k2: KEY, set: Set<KEY>) => void, thisArg?: any): void {
+        if (this.#undefined_Key_exists) callback.call(thisArg, undefined, undefined, this);
         
-        for (const ks of this.#map) {
+        for (const ks of this.#hash_to_items.values())
             for (const k of ks)
                 callback.call(thisArg, k, k, this);
-        }
     }
     
+    // Returns a set containing elements that are in the current set but not in the other set.
+    difference<U>(other: Set<U>): Set<KEY> {
+        const result = new ObjSet<KEY>(this.#equals, this.#hash);
+        for (const key of this)
+            if (!other.has(key as unknown as U))
+                result.add(key);
+        return result;
+    }
     
+    // Returns a set containing elements that are present in both sets.
+    intersection<U>(other: Set<U>): Set<KEY & U> {
+        const result = new ObjSet<KEY & U>(this.#equals as any, this.#hash as any);
+        for (const key of this)
+            if (other.has(key as unknown as U))
+                result.add(key as unknown as KEY & U);
+        return result;
+    }
+    
+    // Checks if two sets have no elements in common.
+    isDisjointFrom(other: Set<unknown>): boolean {
+        for (const key of this) if (other.has(key)) return false;
+        return true;
+    }
+    
+    // Checks if all elements of the current set are in the other set.
+    isSubsetOf(other: Set<unknown>): boolean {
+        for (const key of this) if (!other.has(key)) return false;
+        return true;
+    }
+    
+    // Checks if the current set contains all elements of the other set.
+    isSupersetOf(other: Set<unknown>): boolean {
+        for (const key of other) if (!this.has(key as KEY)) return false;
+        return true;
+    }
+    
+    // Returns a set containing elements that are in either of the sets but not in both.
+    symmetricDifference<U>(other: Set<U>): Set<KEY | U> {
+        const result = new ObjSet<KEY | U>(this.#equals as any, this.#hash as any);
+        for (const key of this) if (!other.has(key as unknown as U)) result.add(key);
+        for (const key of other) if (!this.has(key as any)) result.add(key as unknown as KEY | U);
+        return result;
+    }
+    
+    // Returns a set containing all elements from both sets.
+    union<U>(other: Set<U>): Set<KEY | U> {
+        const result = new ObjSet<KEY | U>(this.#equals as any, this.#hash as any);
+        for (const key of this) result.add(key);
+        for (const key of other) result.add(key as unknown as KEY | U);
+        return result;
+    }
 }
 
-const seed = 40009
+// A seed value for the hash function.
+const seed = 40009;
