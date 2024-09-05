@@ -10,6 +10,8 @@
     "strictNullChecks": true,
     "sourceMap": true
   },
-  "include": ["lib/*.ts",
-	"lib/collections/*.ts"]
+ "include": ["*.ts"],
+   "exclude": [
+	 "node_modules"
+   ]
 }

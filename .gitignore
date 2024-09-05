@@ -1,7 +1,9 @@
 
-/InTS.iml
-/JS/
-/.gitignore
 /.idea/
-/Generator.class
+/JS/
+/node_modules/
+/.gitignore
 /Generator.java
+/Generator.class
+/InTS.iml
+/package-lock.json
