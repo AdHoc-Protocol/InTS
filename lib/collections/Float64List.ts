@@ -37,6 +37,7 @@ export namespace Float64List{
 	// Read-only class to handle a list of Float64 values with a default value.
 	export class R{
 		readonly default_value: number;
+		// @ts-ignore
 		values: Float64Array;
 		protected _size: number = 0;
 		get size(){ return this._size;}

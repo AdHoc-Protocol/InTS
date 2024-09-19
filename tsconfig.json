@@ -10,8 +10,5 @@
     "strictNullChecks": true,
     "sourceMap": true
   },
- "include": ["*.ts"],
-   "exclude": [
-	 "node_modules"
-   ]
+  "strict": true
 }

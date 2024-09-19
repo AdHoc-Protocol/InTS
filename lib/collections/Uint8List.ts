@@ -37,6 +37,7 @@ export namespace Uint8List{
 	// Read-only class to handle a list of Uint8 values with a default value.
 	export class R{
 		readonly default_value: number;
+		// @ts-ignore
 		values: Uint8Array;
 		protected _size: number = 0;
 		get size(){ return this._size;}

@@ -36,7 +36,9 @@ import AdHoc from "../AdHoc"
 export namespace BigInt64NullList {
     export abstract class R<UNDEFINED = undefined> {
         // Data structures for handling nulls and big integers
+        // @ts-ignore
         nulls: BitList.RW; // BitList to handle null flags
+        // @ts-ignore
         values: BigInt64Array; // Array to store values
         undefined_value: UNDEFINED; // Default value for undefined elements
 

@@ -29,6 +29,7 @@
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
 //  OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //  SOFTWARE.
+
 import AdHoc from "../AdHoc";
 
 export namespace Uint32List{
@@ -36,6 +37,7 @@ export namespace Uint32List{
 	// Read-only class to handle a list of Uint32 values with a default value.
 	export class R{
 		readonly default_value: number;
+		// @ts-ignore
 		values: Uint32Array;
 		protected _size: number = 0;
 		get size(){ return this._size;}

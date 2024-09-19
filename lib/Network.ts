@@ -32,21 +32,18 @@
 
 import AdHoc from "./AdHoc";
 
-
 export namespace Network {
-
-
     export class Loopback {
         protected readonly src_buffer: ArrayBuffer;
         protected readonly src_view: DataView;
 
-        protected bytes_dst ?: AdHoc.BytesDst;
+        protected bytes_dst?: AdHoc.BytesDst;
 
-        constructor(buff_size: number, src: AdHoc.BytesSrc, dst ?: AdHoc.BytesDst) {
-            this.src_view = new DataView(this.src_buffer = new ArrayBuffer(buff_size));
+        constructor(buff_size: number, src: AdHoc.BytesSrc, dst?: AdHoc.BytesDst) {
+            this.src_view = new DataView((this.src_buffer = new ArrayBuffer(buff_size)));
             src.subscribe_on_new_bytes_to_transmit_arrive((src: AdHoc.BytesSrc) => {
                 for (let bytes = 0; 0 < (bytes = src.read(this.src_view, 0, this.src_buffer.byteLength));) this.bytes_dst?.write(this.src_view, 0, bytes);
-            })
+            });
             this.bytes_dst = dst;
         }
     }
@@ -64,7 +61,6 @@ export namespace Network {
                     console.log(channel.host + ":Remote peer " + channel.peer + " has dropped the connection.");
                     return;
                 case Host.Channel.Event.INT_EXT_DISCONNECT:
-
                     console.log(channel.host + ":This host has dropped the connection to " + channel.peer);
                     return;
                 case Host.Channel.Event.TIMEOUT:
@@ -73,14 +69,14 @@ export namespace Network {
                 default:
                     console.log(channel.host + ": from" + channel.peer + " event: " + event);
             }
-        }
+        };
         onFailure: (src: Host.Channel<SRC, DST>, err: Error) => void = (src, err) => console.log("onFailure " + src + "\n" + err);
 
         readonly channels: Host.Channel<SRC, DST>;
         new_channel: (host: Host<SRC, DST>) => Host.Channel<SRC, DST>;
 
         buff_size: number;
-        readonly name: string
+        readonly name: string;
 
         constructor(name: string, new_channel: (host: Host<SRC, DST>) => Host.Channel<SRC, DST>, buff_size: number) {
             this.name = name;
@@ -91,102 +87,100 @@ export namespace Network {
             Host.prototype.toString = () => this.name;
         }
 
-
         allocate(): Host.Channel<SRC, DST> {
             let ch = this.channels;
-            for (; ch.is_active(); ch = ch.next)
-                if (!ch.next) return ch.next = this.new_channel(this)
+            for (; ch.is_active(); ch = ch.next) if (!ch.next) return (ch.next = this.new_channel(this));
 
             ch.transmit_time = Date.now();
             return ch;
         }
-
     }
 
     export namespace Host {
         export const FREE = -1;
 
         export class Channel<SRC extends AdHoc.BytesSrc, DST extends AdHoc.BytesDst> {
-
 //#region > Channel code
 //#endregion > Network.Host.Channel
 
             host: Host<SRC, DST>;
-            peer: string;
+            peer = "";
 
-            is_active() { return 0 < this.receive_time; }
+            is_active() {
+                return 0 < this.receive_time;
+            }
 
-            constructor(host: Host<SRC, DST>) { this.host = host; }
+            constructor(host: Host<SRC, DST>) {
+                this.host = host;
+            }
 
             close() {
                 this.transmit_lock = 1;
                 this.host.OnEvent(this, Channel.Event.INT_EXT_DISCONNECT);
             }
 
-            public on_disposed: (ch: Channel<SRC, DST>) => void;
+            public on_disposed: ((ch: Channel<SRC, DST>) => void) | undefined;
 
             dispose() {
-                if (this.receive_time == FREE) //trying to dispose disposed
-                {
+                if (this.receive_time == FREE) {
+                    //trying to dispose disposed
                     console.log(new Error("trying to dispose disposed").toString());
                     return;
                 }
                 close();
-                if (this.transmitter != undefined) this.transmitter.close();
-                if (this.receiver != undefined) this.receiver.close();
+                if (this.transmitter) this.transmitter.close();
+                if (this.receiver) this.receiver.close();
                 this.receive_time = -1;
-                if (this.on_disposed) this.on_disposed(this)
+                if (this.on_disposed) this.on_disposed(this);
             }
 
 //#region Receiver
-            receive_time: number = FREE
+            receive_time: number = FREE;
 
-            public receiver: DST;
+            public receiver: DST | undefined;
 
             receive(src: ArrayBuffer) {
                 this.receive_time = Date.now();
-                this.receiver.write(new DataView(src), 0, src.byteLength);
+                this.receiver?.write(new DataView(src), 0, src.byteLength);
             }
 
 //#endregion
-
-
 //#region Transmitter
             transmit_time: number = FREE;
 
-            public transmitter: SRC;
+            public transmitter: SRC | undefined;
+            // @ts-ignore
             protected readonly transmit_buffer: ArrayBuffer;
+            // @ts-ignore
             protected readonly transmit_view: DataView;
 
-            public on_connected: ((ch: Channel<SRC, DST>) => void) | undefined
+            public on_connected: ((ch: Channel<SRC, DST>) => void) | undefined;
 
             public transmitter_connected(): void {
-                this.transmit_time = Date.now()
+                this.transmit_time = Date.now();
                 this.host.OnEvent(this, Network.Host.Channel.Event.INT_EXT_CONNECT);
-                
-                if (this.on_connected) this.on_connected(this)
-                
+
+                if (this.on_connected) this.on_connected(this);
+
                 this.transmit_lock = 0;
-                this.transmitter.subscribe_on_new_bytes_to_transmit_arrive(this.on_new_bytes_to_transmit_arrive)
+                this.transmitter?.subscribe_on_new_bytes_to_transmit_arrive(this.on_new_bytes_to_transmit_arrive);
             }
 
-            transmit_lock: number
+            transmit_lock = 0;
 
-            public on_new_bytes_to_transmit_arrive(): void { //Callback function called when new bytes in the source are available for transmission
-                if (this.transmit_lock++ == 1) this.transmit_(); }
+            public on_new_bytes_to_transmit_arrive(): void {
+                //Callback function called when new bytes in the source are available for transmission
+                if (this.transmit_lock++ == 1) this.transmit_();
+            }
 
             transmit_(): void {
-
-                for (let bytes = 0; (bytes = this.transmitter.read(this.transmit_view, 0, this.transmit_view.byteLength)); this.transmit_time = Date.now())
-                    this.transmit(
-                        bytes != this.transmit_view.byteLength ?
-                        this.transmit_buffer.slice(0, bytes) :
-                        this.transmit_buffer
-                    );
+                for (let bytes = 0; (bytes = this.transmitter!.read(this.transmit_view, 0, this.transmit_view.byteLength)); this.transmit_time = Date.now()) this.transmit(bytes != this.transmit_view.byteLength ?
+                                                                                                                                                                           this.transmit_buffer.slice(0, bytes) :
+                                                                                                                                                                           this.transmit_buffer);
             }
 
+            // @ts-ignore
             transmit: (src: ArrayBuffer) => void;
-
 //#endregion
             next: Channel<SRC, DST> | undefined = undefined;
         }
@@ -203,57 +197,52 @@ export namespace Network {
     }
 
     export class WebSocketClient<SRC extends AdHoc.BytesSrc, DST extends AdHoc.BytesDst> extends Host<SRC, DST> {
-
 //#region > WebSocket Client code
 //#endregion > Network.Host.WebSocketClient
 
-        public ext ?: WebSocket;
+        public ext?: WebSocket;
 
         private connected = false;
 
         //'ws://localhost:4321'
-        connect(server: string, onConnected: (src: SRC) => void, onConnectingFailure: (Error) => void): void {
-            this.channels.peer = server
+        connect(server: string, onConnected: (src: SRC) => void, onConnectingFailure: (err: Error) => void): void {
+            this.channels.peer = server;
             this.connected = false;
 
             try {
                 (this.ext = new WebSocket(server)).binaryType = "arraybuffer"; //https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/binaryType
             } catch (e) {
-                console.log()
+                console.log();
             }
 
             this.ext!.onopen = () => {
-                this.channels.transmitter_connected()
-                onConnected(this.channels.transmitter)
-            }
+                this.channels.transmitter_connected();
+                onConnected(this.channels.transmitter!);
+            };
 
             this.ext!.onclose = () => this.channels.close();
             this.ext!.onerror = (event) => {
                 if (this.connected) {
                     this.channels.close();
                     this.connected = false;
-                    this.onFailure(this.channels, new Error(event + ":" + event.type))
-                } else onConnectingFailure(new Error("The server is not reachable"))
-            }
-            this.ext!.onmessage = (event) =>
-                this.channels.receive(event.data);
+                    this.onFailure(this.channels, new Error(event + ":" + event.type));
+                } else onConnectingFailure(new Error("The server is not reachable"));
+            };
+            this.ext!.onmessage = (event) => this.channels.receive(event.data);
             this.channels.transmit = (src) => this.ext?.send(src);
         }
     }
 
-
     export class WebRTCClient<SRC extends AdHoc.BytesSrc, DST extends AdHoc.BytesDst> extends Host<SRC, DST> {
-
         connect(server_url: string): SRC {
             const ch = <WebRTCClient.Channel<SRC, DST>>this.allocate();
-            ch.open(new WebRTCClient.WebSocketSignaling('ws://localhost:4321'));
-            ch.transmitter.subscribe_on_new_bytes_to_transmit_arrive(ch.on_new_bytes_to_transmit_arrive)
-            return ch.transmitter;
+            ch.open(new WebRTCClient.WebSocketSignaling("ws://localhost:4321"));
+            ch.transmitter!.subscribe_on_new_bytes_to_transmit_arrive(ch.on_new_bytes_to_transmit_arrive);
+            return ch.transmitter!;
         }
     }
 
     export namespace WebRTCClient {
-
         export interface Signaling {
             onmessage: ((event: MessageEvent) => any) | undefined;
 
@@ -264,8 +253,8 @@ export namespace Network {
             ws: WebSocket;
 
             constructor(signaling_url: string) {
-                this.ws = new WebSocket(signaling_url)
-                this.ws.onmessage = event => this.onmessage!(event);
+                this.ws = new WebSocket(signaling_url);
+                this.ws.onmessage = (event) => this.onmessage!(event);
             }
 
             onmessage: ((event: MessageEvent) => any) | undefined;
@@ -275,73 +264,64 @@ export namespace Network {
             }
         }
 
-
         export class Channel<SRC extends AdHoc.BytesSrc, DST extends AdHoc.BytesDst> extends Host.Channel<SRC, DST> {
-
+            // @ts-ignore
             signal: Signaling;
+            // @ts-ignore
             rtc: RTCPeerConnection;
-            data: RTCDataChannel
+            // @ts-ignore
+            data: RTCDataChannel;
 
-            //'ws://localhost:4321'
-            open(signal: Signaling) {
+            // Initialize the channel and establish connection
+            open(signal: Signaling): void {
                 this.signal = signal;
-                signal.onmessage = this.onsignal;
+                signal.onmessage = this.onsignal.bind(this);
 
                 this.rtc = new RTCPeerConnection();
-                const ch = this.rtc.createDataChannel('AdHoc')
+                const ch = this.rtc.createDataChannel("AdHoc");
 
                 ch.binaryType = "arraybuffer";
-                ch.onopen = () => this.transmit_()
+                ch.onopen = () => this.transmit_();
                 ch.onclose = () => this.close();
                 ch.onerror = () => this.close();
                 ch.onmessage = (event: MessageEvent) => this.receive(event.data);
 
-                // Listen for remote ICE candidates and add them to the peer connection
+                // Handle ICE candidates and send them to the signaling channel
                 this.rtc.onicecandidate = (event) => {
                     if (event.candidate) {
-                        this.signal.send(JSON.stringify({
-                            type: 'iceCandidate',
-                            data: event.candidate,
-                        }));
+                        this.signal.send(
+                            JSON.stringify({
+                                type: "iceCandidate",
+                                data: event.candidate,
+                            }));
                     }
                 };
 
-                // Create an offer and set it as the local description
+                // Create and send an offer to the remote peer
                 this.rtc.createOffer()
-                    .then((offer) => {
-                        return this.rtc.setLocalDescription(offer);
-                    })
+                    .then((offer) => this.rtc.setLocalDescription(offer))
                     .then(() => {
-                        // Send the offer to the remote peer
-                        // Send the description over a signaling channel (e.g. WebSockets)
                         this.signal.send(JSON.stringify(this.rtc.localDescription!));
                     });
-
             }
 
-
-            // Set up event listeners for the signaling channel (e.g. WebSockets)
-            onsignal(event: MessageEvent) {
+            // Handle incoming signaling messages
+            onsignal(event: MessageEvent): void {
                 const message = JSON.parse(event.data);
                 switch (message.type) {
-                    case 'sessionDescription': // Receive a session description from the remote peer and set it as the remote description
-                        this.rtc.setRemoteDescription(message.data)
-                            .then(() => {
-                                if (message.data.type === 'offer') {
-                                    // Create an answer and set it as the local description
-                                    this.rtc.createAnswer()
-                                        .then((answer) => {
-                                            return this.rtc.setLocalDescription(answer);
-                                        })
-                                        .then(() => {
-                                            // Send the answer to the remote peer
-                                            // Send the description over a signaling channel (e.g. WebSockets)
-                                            this.signal.send(JSON.stringify(this.rtc.localDescription!));
-                                        });
-                                }
-                            });
+                    case "sessionDescription":
+                        this.rtc.setRemoteDescription(message.data).then(() => {
+                            if (message.data.type === "offer") {
+                                // Create and send an answer to the remote peer
+                                this.rtc.createAnswer()
+                                    .then((answer) => this.rtc.setLocalDescription(answer))
+                                    .then(() => {
+                                        this.signal.send(JSON.stringify(this.rtc.localDescription!));
+                                    });
+                            }
+                        });
                         break;
-                    case 'iceCandidate':
+                    case "iceCandidate":
                         this.rtc.addIceCandidate(message.data);
                         break;
                     default:
@@ -350,7 +330,8 @@ export namespace Network {
                 }
             }
 
-            transmit = (src: ArrayBuffer) => this.data.send(src);
+            // Transmit data over the data channel
+            transmit = (src: ArrayBuffer): void => this.data.send(src);
         }
     }
 }

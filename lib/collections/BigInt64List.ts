@@ -37,6 +37,7 @@ export namespace BigInt64List{
 	// Read-only class to handle a list of BigInt64 values with a default value.
 	export class R{
 		readonly default_value: bigint;
+		// @ts-ignore
 		values: BigInt64Array;
 		protected _size: number = 0;
 		get size(){ return this._size;}

@@ -37,6 +37,7 @@ export namespace Int16List{
 	// Read-only class to handle a list of Int16 values with a default value.
 	export class R{
 		readonly default_value: number;
+		// @ts-ignore
 		values: Int16Array;
 		protected _size: number = 0;
 		get size(){ return this._size;}
