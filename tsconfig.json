@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2020",
+    "target": "es2021",
     "outDir":"./JS",
     "lib": [
-      "ESNext",
+      "es2021",
       "dom"
     ],
     "strictNullChecks": true,

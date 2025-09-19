@@ -1,34 +1,19 @@
-//  MIT License
+// Copyright 2025 Chikirev Sirguy, Unirail Group
 //
-//  Copyright © 2020 Chikirev Sirguy, Unirail Group. All rights reserved.
-//  For inquiries, please contact:  al8v5C6HU4UtqE9@gmail.com
-//  GitHub Repository: https://github.com/AdHoc-Protocol
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-//  Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to use,
-//  copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-//  the Software, and to permit others to do so, under the following conditions:
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//  1. The above copyright notice and this permission notice must be included in all
-//     copies or substantial portions of the Software.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
-//  2. Users of the Software must provide a clear acknowledgment in their user
-//     documentation or other materials that their solution includes or is based on
-//     this Software. This acknowledgment should be prominent and easily visible,
-//     and can be formatted as follows:
-//     "This product includes software developed by Chikirev Sirguy and the Unirail Group
-//     (https://github.com/AdHoc-Protocol)."
-//
-//  3. If you modify the Software and distribute it, you must include a prominent notice
-//     stating that you have changed the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
-//  OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-//  SOFTWARE.
+// For inquiries, please contact: al8v5C6HU4UtqE9@gmail.com
+// GitHub Repository: https://github.com/AdHoc-Protocol
 
 import BitsList from "./BitsList";
 import AdHoc from "../AdHoc";
@@ -36,27 +21,45 @@ import AdHoc from "../AdHoc";
 
 export namespace BitsNullList {
     /**
-     * Abstract class representing a list of bits with support for null values.
+     * Abstract class representing a read-only list of bits that supports null (or undefined) values.
+     * Extends BitsList._R to inherit bit storage and manipulation logic.
+     *
+     * @abstract
+     * @extends BitsList._R
      */
     export abstract class R extends BitsList._R {
+        /**
+         * @protected
+         * @readonly
+         * The value used internally to represent undefined or null within the bit array.
+         * This value should be outside the valid range of normal data values for the bit field.
+         */
         protected readonly undefined_val: number;
 
-        // Constructor
+        /**
+         * Constructor for the BitsNullList.R class.
+         *
+         * @param bits_per_item {number} The number of bits to allocate for each item in the list.
+         * @param null_val {number} The value to use internally to represent null/undefined. This should be a value that will not be used for actual data.
+         * @param [size] {number} Initial size of the list (number of items).
+         * @param [length] {number} Initial length of the underlying storage array (in words).
+         * @param [default_value] {number} The default value to initialize new storage with, defaults to `null_val` if not provided.
+         */
         protected constructor(bits_per_item: number, null_val: number, size?: number, length?: number, default_value?: number) {
             super(bits_per_item, default_value ?? null_val, size, length);
-            this.undefined_val = null_val;
+            this.undefined_val = null_val;//Value representing undefined/null. Initialized with the provided `null_val`.
         }
 
         /**
-         * Gets the last element in the list.
-         * @returns {number | undefined} The last element or undefined.
+         * Gets the last element in the list. Returns `undefined` if the last element is the null value.
+         * @returns {(number | undefined)} The last element in the list, or `undefined` if it's a null value or the list is empty.
          */
         get last(): number | undefined {return this.get_(this._size - 1);}
 
         /**
-         * Checks if the list contains the specified value.
-         * @param value {number | undefined} The value to check for.
-         * @returns {boolean} True if the value is found, false otherwise.
+         * Checks if the list contains the specified value (including undefined/null).
+         * @param {(number | undefined)} value The value to check for.
+         * @returns {boolean} True if the value is found in the list, false otherwise.
          */
         contains(value: number | undefined): boolean {
             return -1 < super._indexOf(value === undefined ?
@@ -65,9 +68,9 @@ export namespace BitsNullList {
         }
 
         /**
-         * Returns the index of the first occurrence of the specified value.
-         * @param value {number | undefined} The value to search for.
-         * @returns {number} The index of the value or -1 if not found.
+         * Returns the index of the first occurrence of the specified value (including undefined/null).
+         * @param {(number | undefined)} value The value to search for.
+         * @returns {number} The index of the first occurrence, or -1 if not found.
          */
         indexOf(value: number | undefined): number {
             return super._indexOf(value === undefined ?
@@ -76,9 +79,9 @@ export namespace BitsNullList {
         }
 
         /**
-         * Returns the index of the last occurrence of the specified value.
-         * @param value {number | undefined} The value to search for.
-         * @returns {number} The index of the value or -1 if not found.
+         * Returns the index of the last occurrence of the specified value (including undefined/null).
+         * @param {(number | undefined)} value The value to search for.
+         * @returns {number} The index of the last occurrence, or -1 if not found.
          */
         lastIndexOf(value: number | undefined): number {
             return super._lastIndexOf_(this._size, value === undefined ?
@@ -87,10 +90,10 @@ export namespace BitsNullList {
         }
 
         /**
-         * Returns the index of the last occurrence of the specified value, starting from a given index.
-         * @param from {number} The index to start searching from.
-         * @param value {number | undefined} The value to search for.
-         * @returns {number} The index of the value or -1 if not found.
+         * Returns the index of the last occurrence of the specified value (including undefined/null), searching backwards from a given index.
+         * @param {number} from The index to start searching backwards from.
+         * @param {(number | undefined)} value The value to search for.
+         * @returns {number} The index of the last occurrence, or -1 if not found.
          */
         lastIndexOf_(from: number, value: number | undefined) {
             return super._lastIndexOf_(from, value === undefined ?
@@ -99,16 +102,16 @@ export namespace BitsNullList {
         }
 
         /**
-         * Checks if the specified index has a null value.
-         * @param index {number} The index to check.
-         * @returns {boolean} True if the value at the index is null, false otherwise.
+         * Checks if the element at the specified index is considered null or undefined.
+         * @param {number} index The index to check.
+         * @returns {boolean} True if the value at the index is null/undefined, false otherwise.
          */
-        hasValue(index: number): boolean { return super.get_(index) == this.undefined_val; }
+        hasValue(index: number): boolean { return super.get_(index) === this.undefined_val; }
 
         /**
-         * Gets the element at the specified index.
-         * @param index {number} The index of the element to get.
-         * @returns {number | undefined} The element or undefined.
+         * Gets the element at the specified index. Returns `undefined` if the element is the null value.
+         * @param {number} index The index of the element to get.
+         * @returns {(number | undefined)} The element at the specified index, or `undefined` if it's a null value.
          */
         get(index: number): number | undefined {
             const value = super.get_(index);
@@ -118,36 +121,49 @@ export namespace BitsNullList {
         }
 
         /**
-         * Gets the raw value at the specified index.
-         * @param index {number} The index of the element to get.
-         * @returns {number} The raw value.
+         * Gets the raw underlying value at the specified index, regardless of whether it represents a null value.
+         * Useful for internal operations where the raw representation is needed.
+         * @param {number} index The index of the element to get the raw value from.
+         * @returns {number} The raw value at the specified index.
          */
         public raw(index: number): number {return super.get_(index);}
 
 
-        // Custom string tag for this class.
+        /**
+         * @inheritdoc
+         * @returns {string} The string tag "BitsNullList.RW".
+         */
         get [Symbol.toStringTag]() { return "BitsNullList.RW" }
 
         /**
-         * Generates a hash for the given object.
-         * @param hash {number} The initial hash value.
-         * @param src {R | undefined} The object to hash.
+         * Generates a hash for the BitsNullList.R object.
+         * @param {number} hash The initial hash value to start with.
+         * @param {(R | undefined)} src The BitsNullList.R object to hash.
          * @returns {number} The computed hash value.
          */
         static hash(hash: number, src: R | undefined): number { return BitsList._R.hash(AdHoc.hash_number(hash, undefined), src);}
 
         /**
-         * Checks if two objects are equal.
-         * @param one {R | undefined} The first object to compare.
-         * @param two {R | undefined} The second object to compare.
+         * Checks if two BitsNullList.R objects are equal. They are considered equal if they have the same size,
+         * the same elements in the same order, and the same undefined value representation.
+         * @param {(R | undefined)} one The first BitsNullList.R object to compare.
+         * @param {(R | undefined)} two The second BitsNullList.R object to compare.
          * @returns {boolean} True if the objects are equal, false otherwise.
          */
-        static equals(one: R | undefined, two: R | undefined): boolean {return BitsList._R.equals(one, two) && (one === two || (one != undefined && one!.undefined_val === two!.undefined_val)); }
+        static equals(one: R | undefined, two: R | undefined): boolean {
+            return BitsList._R.equals(one, two) && (one === two || (one != undefined && two != undefined && one.undefined_val === two.undefined_val));
+        }
 
-        // Returns a string representation of the bit array
+        /**
+         * @inheritdoc
+         * @returns {string} A string representation of the bit array, including length and JSON output.
+         */
         toString() { return `length = ${this.size}\n \n${this.toJSON()}` }
 
-        // Returns a JSON representation of the bit array
+        /**
+         * Returns a JSON representation of the bit array. Null values are represented as `null` in the JSON output.
+         * @returns {Array<number | null>} An array containing the values of the bit list, with null values represented as `null`.
+         */
         toJSON() {
 
             if (0 < this._size) {
@@ -157,7 +173,7 @@ export namespace BitsNullList {
                 for (let bp = 0, max = this._size * this.bits, _bit; bp < max; bp += this.bits)
                     result.push((BitsList.BITS < (_bit = BitsList.bit(bp)) + this.bits) ?
                                 BitsList.value_(src, src = this.values[BitsList.index(bp) + 1], _bit, this.bits) :
-                                BitsList.value(src, _bit, this.mask))
+                                BitsList.value(src, _bit, this.bits))
 
                 return result;
             }
@@ -170,8 +186,21 @@ export namespace BitsNullList {
 
     /**
      * Class representing a read-write list of bits with support for null values.
+     * Extends BitsNullList.R and provides methods to modify the list.
+     *
+     * @class
+     * @extends BitsNullList.R
      */
     export class RW extends R {
+        /**
+         * Constructor for the BitsNullList.RW class.
+         *
+         * @param bits_per_item {number} The number of bits to allocate for each item.
+         * @param null_val {number} The value to use internally to represent null/undefined.
+         * @param [size] {number} Initial size of the list (number of items).
+         * @param [length] {number} Initial length of the underlying storage array (in words).
+         * @param [default_value] {number} The default value to initialize new storage with, defaults to `null_val` if not provided.
+         */
         public constructor(bits_per_item: number, null_val: number, size?: number, length?: number, default_value?: number) {
             super(bits_per_item, null_val, size, length, default_value);
         }
@@ -256,17 +285,11 @@ export namespace BitsNullList {
         }
 
         /**
-         * Sets the value at the last index.
-         * @param value {number | undefined} The value to set.
-         */
-        set1(value: number | undefined) { this.set1_(this.size - 1, value);}
-
-        /**
          * Sets the value at the specified index.
          * @param index {number} The index to set the value at.
          * @param value {number | undefined} The value to set.
          */
-        set1_(index: number, value: number | undefined) {
+        set1( index: number, value: number | undefined) {
             R.set(this, index, value === undefined ?
                                this.undefined_val :
                                value);
@@ -341,11 +364,19 @@ export namespace BitsNullList {
          */
         fit() { this.length = (-this._size); }
 
+        /**
+         * @inheritdoc
+         * @returns {number} The current size of the bit list.
+         */
         get size(): number {return this._size;}
 
+        /**
+         * @inheritdoc
+         * @param {number} size The new size of the bit list.
+         */
         set size(size: number) {
             if (size < 1) this.clear();
-            else if (this.size < size) this.set1_(size - 1, this.default_value);
+            else if (this.size < size) this.set1(size - 1, this.default_value);
             else this._size = size;
         }
     }
